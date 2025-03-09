@@ -67,7 +67,25 @@ app.post('/save-feedback', async (req, res) => {
     }
     
     // Generate the final prompt
-    const prompt = `I want you to implement this UI/UX feedback: "${featureRequest.feedback}". For reference, this is the screenshot of the UI concerned @screenshot-${requestId}.png.`;
+    const prompt = `You are an expert UI/UX coding assistant working within the Cursor editor. Your task is to implement a feature request based on the following user feedback and the attached screenshot. The feedback is provided verbatim as given by the user, and you must focus exclusively on modifying the UI element shown in the attached screenshot file. Do not change any other parts of the codebase unless explicitly mentioned in the feedback.
+
+User Feedback (verbatim): ${featureRequest.feedback}
+
+Attached Screenshot: @screenshot-${requestId}.png 
+
+Instructions:
+1. Analyze the screenshot @screenshot-${requestId}.png to identify the specific UI element referenced by the user feedback.
+2. Interpret the feedback literally and apply the requested change only to the UI element depicted in the screenshot.
+3. Provide the exact code changes (e.g., HTML, CSS, JavaScript) needed to implement the feedback, ensuring no unintended modifications elsewhere.
+4. If the screenshot or feedback is unclear, make a reasonable assumption based on the image and explain your reasoning, but prioritize precision over speculation.
+5. Return the modified code snippet and a brief explanation of what you changed.
+
+Context:
+- The screenshot was taken from a localhost web app.
+- The codebase is located in the root folder configured in the VibeSnap Chrome extension.
+- You have access to the full project context via Cursor's file system integration.
+
+Focus strictly on the UI element in the screenshot and the verbatim feedback. Begin your response with "Analyzing screenshot and feedback..." and end with "Code changes complete."`;
     
     console.log(`Saved feedback #${requestId} to ${rootFolder}`);
     
