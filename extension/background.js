@@ -3,6 +3,9 @@ let rootFolderPath = '';
 // Store for feature requests
 let featureRequests = [];
 
+// Native messaging host connection
+let nativePort = null;
+
 // Listen for keyboard shortcuts
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'capture_feedback') {
@@ -17,21 +20,35 @@ chrome.commands.onCommand.addListener((command) => {
 
 // Create offscreen document for image manipulation
 async function createOffscreenDocumentIfNeeded() {
-  // Check if there's already an offscreen document
-  const existingContexts = await chrome.runtime.getContexts({
-    contextTypes: ['OFFSCREEN_DOCUMENT']
-  });
+  console.log('Checking for offscreen document');
+  try {
+    // Check if there's already an offscreen document
+    const existingContexts = await chrome.runtime.getContexts({
+      contextTypes: ['OFFSCREEN_DOCUMENT']
+    });
 
-  if (existingContexts.length > 0) {
-    return;
+    if (existingContexts.length > 0) {
+      console.log('Offscreen document already exists');
+      return;
+    }
+
+    console.log('Creating offscreen document');
+    // Create an offscreen document for image manipulation
+    // Use only valid reasons from the list (DOM_PARSER is for HTML/XML parsing)
+    await chrome.offscreen.createDocument({
+      url: 'offscreen.html',
+      reasons: ['DOM_PARSER'],
+      justification: 'Crop screenshots for feedback'
+    });
+    
+    console.log('Offscreen document created successfully');
+    
+    // Wait a brief moment for the offscreen document to initialize
+    await new Promise(resolve => setTimeout(resolve, 300));
+  } catch (error) {
+    console.error('Error creating offscreen document:', error);
+    throw new Error(`Failed to create offscreen document: ${error.message}`);
   }
-
-  // Create an offscreen document for image manipulation
-  await chrome.offscreen.createDocument({
-    url: 'offscreen.html',
-    reasons: ['DOM_PARSER'],
-    justification: 'Crop screenshots for feedback'
-  });
 }
 
 // Load stored data when the extension starts
@@ -102,34 +119,209 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   }
 });
 
+// Connect to the native messaging host
+function connectToNativeHost() {
+  try {
+    console.log('Connecting to native messaging host...');
+    nativePort = chrome.runtime.connectNative('com.vibeback.screencapture');
+    
+    nativePort.onMessage.addListener((message) => {
+      console.log('Received message from native host:', message);
+      
+      if (message.success) {
+        // Process the screenshot data
+        processNativeScreenshot(message.screenshotData, message.requestData);
+      } else {
+        console.error('Error from native host:', message.error);
+        // If there was a tab waiting for response, notify it of the error
+        if (message.requestData && message.requestData.tabId) {
+          chrome.tabs.sendMessage(message.requestData.tabId, { 
+            action: 'captureError', 
+            error: message.error || 'Failed to capture screenshot'
+          });
+        }
+      }
+    });
+    
+    nativePort.onDisconnect.addListener(() => {
+      console.log('Disconnected from native host. Last error:', chrome.runtime.lastError);
+      nativePort = null;
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error connecting to native host:', error);
+    return false;
+  }
+}
+
+// Process screenshot from native host
+function processNativeScreenshot(screenshotData, requestData) {
+  console.log('Processing native screenshot with request data:', requestData);
+  
+  const timestamp = new Date().toISOString();
+  const requestId = `req_${Date.now()}`;
+  
+  // Create feature request object
+  const featureRequest = {
+    id: requestId,
+    feedback: requestData.feedback,
+    timestamp: timestamp,
+    url: requestData.url
+  };
+  
+  // Send data to local agent
+  sendToLocalAgent(featureRequest, screenshotData, requestId);
+}
+
 // Capture screenshot of the visible tab
 async function captureScreenshot(tabId, data) {
   console.log('Starting screenshot capture for tab ID:', tabId);
   
   try {
-    // Ensure the offscreen document is created
-    await createOffscreenDocumentIfNeeded();
-    
-    // Capture the visible tab area
-    const screenshotUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
-    console.log('Screenshot captured, sending to offscreen for cropping');
-    
-    // Send to offscreen document for cropping
-    chrome.runtime.sendMessage({
-      target: 'offscreen',
-      action: 'cropScreenshot',
-      data: {
-        screenshotUrl,
-        selection: data.selection,
-        requestData: {
-          feedback: data.feedback,
-          url: data.url
-        }
-      }
+    // Use the improved browser-based screenshot method
+    await fallbackCaptureScreenshot(tabId, data);
+  } catch (error) {
+    console.error('Error in captureScreenshot:', error);
+    // Report error to user
+    chrome.tabs.sendMessage(tabId, { 
+      action: 'captureError', 
+      error: error.message || 'Failed to capture screenshot'
     });
+  }
+}
+
+// Fall back to the original browser-based screenshot method
+async function fallbackCaptureScreenshot(tabId, data) {
+  console.log('Using improved browser screenshot method with data:', data);
+  
+  try {
+    // Try to use the offscreen document for processing
+    try {
+      // Ensure the offscreen document is created
+      await createOffscreenDocumentIfNeeded();
+      
+      console.log('Capturing visible tab with selection:', data.selection);
+      
+      // Capture the visible tab area with the highest quality possible
+      const screenshotUrl = await chrome.tabs.captureVisibleTab(null, { 
+        format: 'png',
+        quality: 100
+      });
+      console.log('Screenshot captured, sending to offscreen for cropping');
+      
+      // Create a promise that will resolve when the crop is complete
+      const cropPromise = new Promise((resolve, reject) => {
+        // Set up a one-time listener for the crop result
+        const cropListener = (message) => {
+          if (message.action === 'cropComplete') {
+            console.log('Received crop complete response');
+            chrome.runtime.onMessage.removeListener(cropListener);
+            resolve(message);
+          } else if (message.action === 'cropError') {
+            console.error('Received crop error:', message.error);
+            chrome.runtime.onMessage.removeListener(cropListener);
+            reject(new Error(message.error || 'Unknown cropping error'));
+          }
+        };
+        
+        // Add the listener
+        chrome.runtime.onMessage.addListener(cropListener);
+        
+        // Set a timeout in case the offscreen document doesn't respond
+        setTimeout(() => {
+          chrome.runtime.onMessage.removeListener(cropListener);
+          reject(new Error('Timeout waiting for crop operation'));
+        }, 10000); // 10 second timeout
+      });
+      
+      // Send the message to the offscreen document
+      chrome.runtime.sendMessage({
+        target: 'offscreen',
+        action: 'cropScreenshot',
+        data: {
+          screenshotUrl,
+          selection: data.selection,
+          requestData: {
+            feedback: data.feedback,
+            url: data.url
+          }
+        }
+      });
+      
+      // Wait for the crop to complete
+      try {
+        const cropResult = await cropPromise;
+        // Process the cropped image
+        if (cropResult.croppedImageUrl) {
+          console.log('Successfully cropped screenshot, processing...');
+          const timestamp = new Date().toISOString();
+          const requestId = `req_${Date.now()}`;
+          
+          // Create feature request object
+          const featureRequest = {
+            id: requestId,
+            feedback: data.feedback,
+            timestamp: timestamp,
+            url: data.url
+          };
+          
+          // Send to local agent
+          sendToLocalAgent(featureRequest, cropResult.croppedImageUrl, requestId);
+        }
+      } catch (cropError) {
+        // If cropping fails, fall back to simple capture without cropping
+        console.error('Error during cropping, falling back to simple capture:', cropError);
+        useSimpleCapture(tabId, data, screenshotUrl);
+      }
+    } catch (offscreenError) {
+      // If offscreen document creation fails, use simple capture
+      console.error('Error with offscreen document, using simple capture:', offscreenError);
+      
+      // Capture the visible tab area
+      const simpleScreenshotUrl = await chrome.tabs.captureVisibleTab(null, { 
+        format: 'png',
+        quality: 100
+      });
+      
+      useSimpleCapture(tabId, data, simpleScreenshotUrl);
+    }
   } catch (error) {
     console.error('Error capturing screenshot:', error);
+    // Report error to user
+    chrome.tabs.sendMessage(tabId, { 
+      action: 'captureError', 
+      error: error.message || 'Failed to capture screenshot'
+    });
   }
+}
+
+// Simple capture method that doesn't rely on offscreen document
+function useSimpleCapture(tabId, data, screenshotUrl) {
+  console.log('Using simple capture without cropping');
+  
+  // Just use the full screenshot without cropping
+  const timestamp = new Date().toISOString();
+  const requestId = `req_${Date.now()}`;
+  
+  // Create feature request object
+  const featureRequest = {
+    id: requestId,
+    feedback: data.feedback,
+    timestamp: timestamp,
+    url: data.url
+  };
+  
+  // Add a note that this is a full screenshot
+  const enhancedFeedback = data.feedback + 
+    "\n\n[Note: This is a full screenshot. The selection region was: " +
+    `x=${data.selection.x}, y=${data.selection.y}, ` +
+    `width=${data.selection.width}, height=${data.selection.height}]`;
+  
+  featureRequest.feedback = enhancedFeedback;
+  
+  // Send to local agent
+  sendToLocalAgent(featureRequest, screenshotUrl, requestId);
 }
 
 // Send data to local agent

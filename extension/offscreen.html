@@ -2,10 +2,17 @@
 <html>
 <head>
   <title>Offscreen Document</title>
+  <script>
+    // Keep the document alive even if there are no active connections
+    const keepAlive = () => setTimeout(keepAlive, 60000);
+    keepAlive();
+  </script>
   <script src="offscreen.js"></script>
 </head>
 <body>
   <!-- This page is used for operations that require DOM APIs not available in service workers -->
   <canvas id="canvas" style="display: none;"></canvas>
+  <!-- Add a visible canvas for debugging if needed -->
+  <canvas id="debug-canvas" width="300" height="200" style="display: none;"></canvas>
 </body>
 </html> 

@@ -10,7 +10,7 @@
     "clipboardWrite",
     "offscreen",
     "commands",
-    "sidePanel"
+    "nativeMessaging"
   ],
   "host_permissions": [
     "http://localhost/*",
@@ -41,8 +41,5 @@
       },
       "description": "Capture UI feedback with custom screenshot selection"
     }
-  },
-  "side_panel": {
-    "default_path": "sidepanel.html"
   }
 } 
