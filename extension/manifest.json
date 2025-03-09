@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Vibe Coding Feedback Tool",
+  "name": "Shift+Command+1",
   "version": "1.0",
   "description": "Capture UI/UX feedback for frontend development with Cursor",
   "permissions": [

@@ -103,28 +103,6 @@ function startScreenshotSelection() {
     }
   });
   
-  // Show instruction
-  const instruction = document.createElement('div');
-  instruction.textContent = 'Click and drag to select area for screenshot, then enter your feedback (Press Esc to cancel)';
-  instruction.style.position = 'fixed';
-  instruction.style.top = '20px';
-  instruction.style.left = '50%';
-  instruction.style.transform = 'translateX(-50%)';
-  instruction.style.padding = '10px 20px';
-  instruction.style.backgroundColor = '#333';
-  instruction.style.color = '#fff';
-  instruction.style.borderRadius = '5px';
-  instruction.style.zIndex = '10001';
-  instruction.style.fontFamily = 'Arial, sans-serif';
-  document.body.appendChild(instruction);
-  
-  // Remove instruction after 5 seconds
-  setTimeout(() => {
-    if (instruction.parentNode) {
-      document.body.removeChild(instruction);
-    }
-  }, 5000);
-  
   selectionOverlay.style.display = 'block';
 }
 
@@ -223,66 +201,129 @@ function handleSelectionEnd(e) {
 
 // Prompt user for feedback
 function promptForFeedback(selection) {
-  // Create the feedback UI dialog
+  // Create the feedback UI dialog with glassmorphic design
   const dialog = document.createElement('div');
   dialog.style.position = 'fixed';
   dialog.style.top = '50%';
   dialog.style.left = '50%';
   dialog.style.transform = 'translate(-50%, -50%)';
-  dialog.style.backgroundColor = '#fff';
-  dialog.style.padding = '20px';
-  dialog.style.borderRadius = '8px';
-  dialog.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+  dialog.style.backgroundColor = 'rgba(255, 255, 255, 0.85)';
+  dialog.style.backdropFilter = 'blur(10px)';
+  dialog.style.webkitBackdropFilter = 'blur(10px)';
+  dialog.style.padding = '25px';
+  dialog.style.borderRadius = '16px';
+  dialog.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.1), 0 1px 8px rgba(0, 0, 0, 0.06)';
+  dialog.style.border = '1px solid rgba(255, 255, 255, 0.5)';
   dialog.style.zIndex = '10002';
-  dialog.style.width = '400px';
+  dialog.style.width = '450px';
   dialog.style.maxWidth = '90%';
-  dialog.style.fontFamily = 'Arial, sans-serif';
+  dialog.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  dialog.style.color = '#1E293B';
+  
+  // Create header section
+  const headerContainer = document.createElement('div');
+  headerContainer.style.marginBottom = '20px';
   
   const title = document.createElement('h2');
-  title.textContent = 'Enter Feedback';
-  title.style.margin = '0 0 15px 0';
-  title.style.fontSize = '18px';
-  title.style.fontWeight = '600';
+  title.textContent = 'Capture Feedback';
+  title.style.margin = '0 0 8px 0';
+  title.style.fontSize = '22px';
+  title.style.fontWeight = '700';
+  title.style.color = '#0F172A';
+  title.style.letterSpacing = '-0.01em';
   
+  const subtitle = document.createElement('p');
+  subtitle.textContent = 'Share your thoughts about this element or feature';
+  subtitle.style.margin = '0';
+  subtitle.style.fontSize = '14px';
+  subtitle.style.color = '#64748B';
+  subtitle.style.fontWeight = '400';
+  
+  headerContainer.appendChild(title);
+  headerContainer.appendChild(subtitle);
+  
+  // Create textarea with improved styling
   const textarea = document.createElement('textarea');
   textarea.style.width = '100%';
   textarea.style.height = '120px';
-  textarea.style.padding = '10px';
-  textarea.style.border = '1px solid #ddd';
-  textarea.style.borderRadius = '4px';
+  textarea.style.padding = '12px 15px';
+  textarea.style.border = '1px solid rgba(203, 213, 225, 0.8)';
+  textarea.style.borderRadius = '8px';
   textarea.style.boxSizing = 'border-box';
-  textarea.style.fontSize = '14px';
-  textarea.style.fontFamily = 'Arial, sans-serif';
+  textarea.style.fontSize = '15px';
+  textarea.style.fontFamily = 'inherit';
   textarea.style.resize = 'vertical';
-  textarea.style.marginBottom = '15px';
+  textarea.style.marginBottom = '20px';
+  textarea.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+  textarea.style.outline = 'none';
+  textarea.style.transition = 'border-color 0.2s ease';
   textarea.placeholder = 'Describe what you want to change or improve...';
+  
+  // Add focus effect to textarea
+  textarea.addEventListener('focus', () => {
+    textarea.style.borderColor = '#3B82F6';
+    textarea.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.15)';
+  });
+  
+  textarea.addEventListener('blur', () => {
+    textarea.style.borderColor = 'rgba(203, 213, 225, 0.8)';
+    textarea.style.boxShadow = 'none';
+  });
   
   const buttonContainer = document.createElement('div');
   buttonContainer.style.display = 'flex';
   buttonContainer.style.justifyContent = 'flex-end';
-  buttonContainer.style.gap = '10px';
+  buttonContainer.style.gap = '12px';
   
   const cancelButton = document.createElement('button');
   cancelButton.textContent = 'Cancel';
-  cancelButton.style.padding = '8px 16px';
-  cancelButton.style.border = '1px solid #ddd';
-  cancelButton.style.borderRadius = '4px';
-  cancelButton.style.backgroundColor = '#f5f5f5';
+  cancelButton.style.padding = '10px 18px';
+  cancelButton.style.border = '1px solid rgba(203, 213, 225, 0.8)';
+  cancelButton.style.borderRadius = '8px';
+  cancelButton.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+  cancelButton.style.color = '#475569';
+  cancelButton.style.fontSize = '14px';
+  cancelButton.style.fontWeight = '500';
   cancelButton.style.cursor = 'pointer';
+  cancelButton.style.transition = 'all 0.2s ease';
+  
+  // Add hover effect to cancel button
+  cancelButton.addEventListener('mouseover', () => {
+    cancelButton.style.backgroundColor = '#F8FAFC';
+  });
+  
+  cancelButton.addEventListener('mouseout', () => {
+    cancelButton.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+  });
   
   const submitButton = document.createElement('button');
-  submitButton.textContent = 'Submit';
-  submitButton.style.padding = '8px 16px';
+  submitButton.textContent = 'Submit Feedback';
+  submitButton.style.padding = '10px 18px';
   submitButton.style.border = 'none';
-  submitButton.style.borderRadius = '4px';
-  submitButton.style.backgroundColor = '#4285F4';
+  submitButton.style.borderRadius = '8px';
+  submitButton.style.background = 'linear-gradient(135deg, #3B82F6, #2563EB)';
   submitButton.style.color = '#fff';
+  submitButton.style.fontSize = '14px';
+  submitButton.style.fontWeight = '500';
   submitButton.style.cursor = 'pointer';
+  submitButton.style.transition = 'all 0.2s ease';
+  submitButton.style.boxShadow = '0 2px 5px rgba(37, 99, 235, 0.3)';
+  
+  // Add hover effect to submit button
+  submitButton.addEventListener('mouseover', () => {
+    submitButton.style.transform = 'translateY(-1px)';
+    submitButton.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.4)';
+  });
+  
+  submitButton.addEventListener('mouseout', () => {
+    submitButton.style.transform = 'translateY(0)';
+    submitButton.style.boxShadow = '0 2px 5px rgba(37, 99, 235, 0.3)';
+  });
   
   buttonContainer.appendChild(cancelButton);
   buttonContainer.appendChild(submitButton);
   
-  dialog.appendChild(title);
+  dialog.appendChild(headerContainer);
   dialog.appendChild(textarea);
   dialog.appendChild(buttonContainer);
   

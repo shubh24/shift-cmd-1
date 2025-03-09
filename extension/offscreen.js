@@ -6,6 +6,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     cropScreenshot(message.data.screenshotUrl, message.data.selection, message.data.requestData);
     // Send an immediate response to prevent channel closing
     sendResponse({status: "processing"});
+  } else if (message.target === 'offscreen' && message.action === 'enableDebug') {
+    console.log('Offscreen: Enabling debug mode');
+    if (typeof enableDebugMode === 'function') {
+      enableDebugMode();
+    }
+    sendResponse({status: "debug enabled"});
   }
   return false; // Don't keep the channel open
 });
@@ -107,6 +113,52 @@ function cropScreenshot(screenshotUrl, selection, requestData) {
           fixedSelection.width, fixedSelection.height,
           0, 0, canvas.width, canvas.height
         );
+        
+        // Also draw to debug canvas if it exists and is visible
+        const debugCanvas = document.getElementById('debug-canvas');
+        if (debugCanvas && window.getComputedStyle(debugCanvas.parentElement).display !== 'none') {
+          const debugContext = debugCanvas.getContext('2d');
+          if (debugContext) {
+            // Clear the debug canvas
+            debugContext.clearRect(0, 0, debugCanvas.width, debugCanvas.height);
+            
+            // Set a background
+            debugContext.fillStyle = '#f8fafc';
+            debugContext.fillRect(0, 0, debugCanvas.width, debugCanvas.height);
+            
+            // Calculate aspect ratio to fit properly
+            const aspectRatio = canvas.width / canvas.height;
+            let drawWidth, drawHeight;
+            
+            if (aspectRatio > 1) {
+              // Landscape orientation
+              drawWidth = Math.min(debugCanvas.width - 40, canvas.width);
+              drawHeight = drawWidth / aspectRatio;
+            } else {
+              // Portrait orientation
+              drawHeight = Math.min(debugCanvas.height - 80, canvas.height);
+              drawWidth = drawHeight * aspectRatio;
+            }
+            
+            // Center the image
+            const xOffset = (debugCanvas.width - drawWidth) / 2;
+            const yOffset = (debugCanvas.height - drawHeight) / 2;
+            
+            // Draw a border
+            debugContext.strokeStyle = 'rgba(203, 213, 225, 0.8)';
+            debugContext.lineWidth = 1;
+            debugContext.strokeRect(xOffset - 1, yOffset - 1, drawWidth + 2, drawHeight + 2);
+            
+            // Draw the image
+            debugContext.drawImage(canvas, xOffset, yOffset, drawWidth, drawHeight);
+            
+            // Add selection info
+            debugContext.fillStyle = '#0f172a';
+            debugContext.font = '14px system-ui, sans-serif';
+            debugContext.fillText(`Selection: ${selection.width}×${selection.height}px`, 20, debugCanvas.height - 45);
+            debugContext.fillText(`Device Pixel Ratio: ${dpr}`, 20, debugCanvas.height - 20);
+          }
+        }
         
         // Send the cropped image back to the background script
         const croppedImageUrl = canvas.toDataURL('image/png');
