@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Vibe Coding Feedback Tool",
+  "version": "1.0",
+  "description": "Capture UI/UX feedback for frontend development with Cursor",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "downloads",
+    "clipboardWrite",
+    "offscreen",
+    "commands",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "http://localhost/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["offscreen.html", "offscreen.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "commands": {
+    "capture_feedback": {
+      "suggested_key": {
+        "mac": "Command+Shift+1"
+      },
+      "description": "Capture UI feedback with custom screenshot selection"
+    }
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  }
+} 

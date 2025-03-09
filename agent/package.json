@@ -1,0 +1,19 @@
+{
+  "name": "vibe-coding-feedback-agent",
+  "version": "1.0.0",
+  "description": "Local agent for Vibe Coding Feedback Tool",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js",
+    "dev": "nodemon agent.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+} 

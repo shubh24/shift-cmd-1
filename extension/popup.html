@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vibe Coding Feedback Tool</title>
+  <style>
+    :root {
+      --primary-color: #4285F4;
+      --primary-hover: #3367D6;
+      --bg-color: #fff;
+      --text-color: #333;
+      --border-color: #ddd;
+      --gray-light: #f5f5f5;
+      --gray-medium: #888;
+      --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      --border-radius: 8px;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      width: 400px;
+      display: flex;
+      color: var(--text-color);
+      background: var(--bg-color);
+    }
+    
+    .container {
+      padding: 20px;
+      width: 100%;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .logo {
+      width: 32px;
+      height: 32px;
+      margin-right: 12px;
+      background-color: var(--primary-color);
+      border-radius: 6px;
+    }
+    
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+      color: var(--text-color);
+    }
+    
+    .shortcut-guide {
+      background-color: var(--gray-light);
+      border-radius: var(--border-radius);
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .shortcut-guide p {
+      font-size: 14px;
+      margin: 0;
+      flex-grow: 1;
+    }
+    
+    .kbd {
+      background-color: #fff;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      padding: 2px 6px;
+      font-family: monospace;
+      font-size: 12px;
+      margin: 0 2px;
+    }
+    
+    .folder-section {
+      margin-bottom: 24px;
+    }
+    
+    .folder-section label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    
+    .input-group {
+      display: flex;
+      gap: 8px;
+    }
+    
+    input[type="text"] {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      font-size: 14px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    
+    input[type="text"]:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+    }
+    
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    .status {
+      font-size: 14px;
+      padding: 8px 12px;
+      margin-top: 12px;
+      border-radius: var(--border-radius);
+      display: none;
+    }
+    
+    .success {
+      background-color: #E8F5E9;
+      color: #2E7D32;
+      display: block;
+    }
+    
+    .error {
+      background-color: #FFEBEE;
+      color: #C62828;
+      display: block;
+    }
+    
+    .side-panel-link {
+      display: block;
+      margin-top: 20px;
+      text-align: center;
+      padding: 10px;
+      background-color: var(--gray-light);
+      color: var(--text-color);
+      border-radius: var(--border-radius);
+      text-decoration: none;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    
+    .side-panel-link:hover {
+      background-color: #e9e9e9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo"></div>
+      <h1>Vibe Coding Feedback</h1>
+    </div>
+    
+    <div class="shortcut-guide">
+      <p>
+        Press <span class="kbd">⌘</span> + <span class="kbd">⇧</span> + <span class="kbd">1</span> to capture UI feedback
+      </p>
+    </div>
+    
+    <div class="folder-section">
+      <label for="rootFolder">Set Cursor Project Path:</label>
+      <div class="input-group">
+        <input type="text" id="rootFolder" placeholder="e.g., /Users/username/projects/my-app">
+        <button id="saveFolder">Save</button>
+      </div>
+      <div id="folderStatus" class="status"></div>
+    </div>
+    
+    <a href="#" id="openSidePanel" class="side-panel-link">
+      View All Feedback (Open Side Panel)
+    </a>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html> 
