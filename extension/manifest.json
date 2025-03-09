@@ -3,6 +3,11 @@
   "name": "Shift+Command+1",
   "version": "1.0",
   "description": "Capture UI/UX feedback for frontend development with Cursor",
+  "icons": {
+    "16": "icons/Chrome-Extension-Icon-16.png",
+    "48": "icons/Chrome-Extension-Icon-48.png",
+    "128": "icons/Chrome-Extension-Icon-128.png"
+  },
   "permissions": [
     "activeTab",
     "storage",
@@ -20,7 +25,13 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/Chrome-Extension-Icon-16.png",
+      "48": "icons/Chrome-Extension-Icon-48.png",
+      "128": "icons/Chrome-Extension-Icon-128.png"
+    },
+    "default_title": "Shift+Command+1"
   },
   "content_scripts": [
     {

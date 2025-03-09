@@ -335,13 +335,50 @@ function sendToLocalAgent(featureRequest, screenshotUrl, requestId) {
   
   const timestamp = new Date().toLocaleString();
   
-  // Add to feature requests array
-  featureRequests.push({
-    id: requestId,
-    feedback: featureRequest.feedback,
-    timestamp: featureRequest.timestamp,
-    url: featureRequest.url,
-    prompt: `You are an expert UI/UX coding assistant working within the Cursor editor. Your task is to implement a feature request based on the following user feedback and the attached screenshot. The feedback is provided verbatim as given by the user, and you must focus exclusively on modifying the UI element shown in the attached screenshot file. Do not change any other parts of the codebase unless explicitly mentioned in the feedback.
+  // Send to local agent via fetch
+  fetch('http://localhost:3000/save-feedback', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      rootFolder: rootFolderPath,
+      featureRequest,
+      screenshot: screenshotUrl,
+      requestId
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Successfully sent to local agent:', data);
+    
+    // After successfully sending to the agent, then update the local cache
+    // with the response from the server
+    if (data.success) {
+      // Create the feature request object with data from the server
+      const newFeatureRequest = {
+        id: requestId,
+        feedback: featureRequest.feedback,
+        timestamp: featureRequest.timestamp,
+        url: featureRequest.url,
+        prompt: data.prompt || generatePrompt(featureRequest, requestId)
+      };
+      
+      // Add to feature requests array
+      featureRequests.push(newFeatureRequest);
+      
+      // Save feature requests to storage
+      chrome.storage.local.set({ featureRequests });
+    }
+  })
+  .catch(error => {
+    console.error('Error sending to local agent:', error);
+  });
+}
+
+// Helper function to generate prompt (moved from inline)
+function generatePrompt(featureRequest, requestId) {
+  return `You are an expert UI/UX coding assistant working within the Cursor editor. Your task is to implement a feature request based on the following user feedback and the attached screenshot. The feedback is provided verbatim as given by the user, and you must focus exclusively on modifying the UI element shown in the attached screenshot file. Do not change any other parts of the codebase unless explicitly mentioned in the feedback.
 
 User Feedback (verbatim): ${featureRequest.feedback}
 
@@ -359,30 +396,5 @@ Context:
 - The codebase is located in the root folder configured in the VibeSnap Chrome extension.
 - You have access to the full project context via Cursor's file system integration.
 
-Focus strictly on the UI element in the screenshot and the verbatim feedback. Begin your response with "Analyzing screenshot and feedback..." and end with "Code changes complete."`
-  });
-  
-  // Save feature requests to storage
-  chrome.storage.local.set({ featureRequests });
-  
-  // Send to local agent via fetch
-  fetch('http://localhost:3000/save-feedback', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      rootFolder: rootFolderPath,
-      featureRequest,
-      screenshot: screenshotUrl,
-      requestId
-    })
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log('Successfully sent to local agent:', data);
-  })
-  .catch(error => {
-    console.error('Error sending to local agent:', error);
-  });
+Focus strictly on the UI element in the screenshot and the verbatim feedback. Begin your response with "Analyzing screenshot and feedback..." and end with "Code changes complete."`;
 } 
